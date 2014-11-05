@@ -1,6 +1,6 @@
 /*
  * RHQ Management Platform
- * Copyright (C) 2005-2012 Red Hat, Inc.
+ * Copyright (C) 2005-2014 Red Hat, Inc.
  * All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -38,7 +38,6 @@ import com.smartgwt.client.data.DSCallback;
 import com.smartgwt.client.data.DSRequest;
 import com.smartgwt.client.data.DSResponse;
 import com.smartgwt.client.types.SelectionStyle;
-import com.smartgwt.client.widgets.Label;
 import com.smartgwt.client.widgets.grid.ListGridRecord;
 import com.smartgwt.client.widgets.grid.events.SelectionChangedHandler;
 import com.smartgwt.client.widgets.grid.events.SelectionEvent;
@@ -66,8 +65,8 @@ import org.rhq.core.domain.resource.composite.ResourcePermission;
 import org.rhq.core.domain.resource.group.ResourceGroup;
 import org.rhq.core.domain.util.PageList;
 import org.rhq.coregui.client.CoreGUI;
-import org.rhq.coregui.client.ImageManager;
 import org.rhq.coregui.client.LinkManager;
+import org.rhq.coregui.client.UserSessionManager;
 import org.rhq.coregui.client.ViewId;
 import org.rhq.coregui.client.ViewPath;
 import org.rhq.coregui.client.components.tree.EnhancedTreeNode;
@@ -86,6 +85,7 @@ import org.rhq.coregui.client.inventory.resource.type.ResourceTypeRepository;
 import org.rhq.coregui.client.util.Log;
 import org.rhq.coregui.client.util.enhanced.EnhancedVLayout;
 import org.rhq.coregui.client.util.message.Message;
+import org.rhq.coregui.client.util.preferences.UserPreferenceNames.UiSubsystem;
 
 /**
  * @author Jay Shaughnessy
@@ -95,7 +95,7 @@ public class ResourceTreeView extends EnhancedVLayout {
 
     private TreeGrid treeGrid;
     private String selectedNodeId;
-//    private Label loadingLabel;
+    //    private Label loadingLabel;
 
     private Resource rootResource;
 
@@ -104,6 +104,8 @@ public class ResourceTreeView extends EnhancedVLayout {
 
     // Maps autogroup/type backing group ids to the corresponding autogroup/type nodes.
     private Map<Integer, AutoGroupTreeNode> autoGroupNodeMap = new HashMap<Integer, AutoGroupTreeNode>();
+
+    private Map<UiSubsystem, Boolean> showSubsystems;
 
     public ResourceTreeView() {
         super();
@@ -176,7 +178,8 @@ public class ResourceTreeView extends EnhancedVLayout {
                             CoreGUI.showBusy(true);
                             getAutoGroupBackingGroup(agNode, new AsyncCallback<ResourceGroup>() {
                                 public void onSuccess(ResourceGroup result) {
-                                    CoreGUI.showBusy(false);;
+                                    CoreGUI.showBusy(false);
+                                    ;
                                     renderAutoGroup(result);
                                     // Make sure to re-enable ourselves.
                                     enable();
@@ -282,11 +285,13 @@ public class ResourceTreeView extends EnhancedVLayout {
         criteria.addFilterResourceTypeId(agNode.getResourceType().getId());
         criteria.addFilterAutoGroupParentResourceId(agNode.getParentResource().getId());
         criteria.addFilterVisible(false);
-        CoreGUI.showBusy(true);;
+        CoreGUI.showBusy(true);
+        ;
         resourceGroupService.findResourceGroupsByCriteria(criteria, new AsyncCallback<PageList<ResourceGroup>>() {
 
             public void onFailure(Throwable caught) {
-                CoreGUI.showBusy(false);;
+                CoreGUI.showBusy(false);
+                ;
                 callback.onFailure(new RuntimeException(MSG.view_tree_common_loadFailed_node(), caught));
             }
 
@@ -302,13 +307,15 @@ public class ResourceTreeView extends EnhancedVLayout {
                     resourceGroupService.createPrivateResourceGroup(backingGroup, childIds,
                         new AsyncCallback<ResourceGroup>() {
                             public void onFailure(Throwable caught) {
-                                CoreGUI.showBusy(false);;
+                                CoreGUI.showBusy(false);
+                                ;
                                 callback.onFailure(new RuntimeException(MSG.view_tree_common_loadFailed_create(),
                                     caught));
                             }
 
                             public void onSuccess(ResourceGroup result) {
-                                CoreGUI.showBusy(false);;
+                                CoreGUI.showBusy(false);
+                                ;
                                 // store a map entry from backingGroupId to AGTreeNode so we can easily
                                 // get back to this node given the id of the backing group (from the viewpath)
                                 autoGroupNodeMap.put(result.getId(), agNode);
@@ -334,13 +341,15 @@ public class ResourceTreeView extends EnhancedVLayout {
                     resourceGroupService.setAssignedResources(backingGroup.getId(), childIds, false,
                         new AsyncCallback<Void>() {
                             public void onFailure(Throwable caught) {
-                                CoreGUI.showBusy(false);;
+                                CoreGUI.showBusy(false);
+                                ;
                                 callback.onFailure(new RuntimeException(MSG.view_tree_common_loadFailed_update(),
                                     caught));
                             }
 
                             public void onSuccess(Void result) {
-                                CoreGUI.showBusy(false);;
+                                CoreGUI.showBusy(false);
+                                ;
                                 callback.onSuccess(backingGroup);
                             }
                         });
@@ -447,6 +456,7 @@ public class ResourceTreeView extends EnhancedVLayout {
         final ResourceComposite resourceComposite, final ResourceType resourceType) {
         final Resource resource = resourceComposite.getResource();
         final ResourcePermission resourcePermission = resourceComposite.getResourcePermission();
+        showSubsystems = UserSessionManager.getUserPreferences().getShowUiSubsystems();
 
         // resource name
         resourceContextMenu.setItems(new MenuItem(resource.getName()));
@@ -467,9 +477,6 @@ public class ResourceTreeView extends EnhancedVLayout {
             }
         });
         resourceContextMenu.addItem(refresh);
-
-
-
 
         // separator
         resourceContextMenu.addItem(new MenuItemSeparator());
@@ -503,55 +510,62 @@ public class ResourceTreeView extends EnhancedVLayout {
         resourceContextMenu.addItem(pluginConfiguration);
 
         // resource config
-        MenuItem resourceConfiguration = new MenuItem(MSG.view_tree_common_contextMenu_resourceConfiguration());
-        boolean resourceConfigEnabled = resourcePermission.isConfigureRead()
-            && resourceType.getResourceConfigurationDefinition() != null;
-        resourceConfiguration.setEnabled(resourceConfigEnabled);
-        if (resourceConfigEnabled) {
-            resourceConfiguration.addClickHandler(new ClickHandler() {
+        if (showSubsystems.get(UiSubsystem.CONFIG)) {
+            MenuItem resourceConfiguration = new MenuItem(MSG.view_tree_common_contextMenu_resourceConfiguration());
+            boolean resourceConfigEnabled = resourcePermission.isConfigureRead()
+                && resourceType.getResourceConfigurationDefinition() != null;
+            resourceConfiguration.setEnabled(resourceConfigEnabled);
+            if (resourceConfigEnabled) {
+                resourceConfiguration.addClickHandler(new ClickHandler() {
 
-                public void onClick(MenuItemClickEvent event) {
-                    CoreGUI.goToView(LinkManager.getResourceTabLink(resource.getId(), "Configuration", "Current"));
-                }
-            });
+                    public void onClick(MenuItemClickEvent event) {
+                        CoreGUI.goToView(LinkManager.getResourceTabLink(resource.getId(), "Configuration", "Current"));
+                    }
+                });
+            }
+            resourceContextMenu.addItem(resourceConfiguration);
         }
-        resourceContextMenu.addItem(resourceConfiguration);
 
         // separator
         resourceContextMenu.addItem(new MenuItemSeparator());
 
         // Operations Menu
-        MenuItem operations = new MenuItem(MSG.common_title_operations());
-        boolean operationsEnabled = (resourcePermission.isControl() && (resourceType.getOperationDefinitions() != null) && !resourceType
-            .getOperationDefinitions().isEmpty());
-        operations.setEnabled(operationsEnabled);
-        if (operationsEnabled) {
-            Menu opSubMenu = new Menu();
+        if (showSubsystems.get(UiSubsystem.OPERATIONS)) {
+            MenuItem operations = new MenuItem(MSG.common_title_operations());
+            boolean operationsEnabled = (resourcePermission.isControl()
+                && (resourceType.getOperationDefinitions() != null) && !resourceType.getOperationDefinitions()
+                .isEmpty());
+            operations.setEnabled(operationsEnabled);
+            if (operationsEnabled) {
+                Menu opSubMenu = new Menu();
 
-            //sort the display items alphabetically
-            TreeSet<String> ordered = new TreeSet<String>();
-            Map<String, OperationDefinition> definitionMap = new HashMap<String, OperationDefinition>();
-            for (OperationDefinition o : resourceType.getOperationDefinitions()) {
-                ordered.add(o.getDisplayName());
-                definitionMap.put(o.getDisplayName(), o);
+                //sort the display items alphabetically
+                TreeSet<String> ordered = new TreeSet<String>();
+                Map<String, OperationDefinition> definitionMap = new HashMap<String, OperationDefinition>();
+                for (OperationDefinition o : resourceType.getOperationDefinitions()) {
+                    ordered.add(o.getDisplayName());
+                    definitionMap.put(o.getDisplayName(), o);
+                }
+                for (String displayName : ordered) {
+                    final OperationDefinition operationDefinition = definitionMap.get(displayName);
+
+                    MenuItem operationItem = new MenuItem(operationDefinition.getDisplayName());
+                    operationItem.addClickHandler(new ClickHandler() {
+
+                        public void onClick(MenuItemClickEvent event) {
+                            String viewPath = LinkManager.getResourceTabLink(resource.getId(),
+                                ResourceDetailView.Tab.Operations.NAME, "Schedules")
+                                + "/0/"
+                                + operationDefinition.getId();
+                            CoreGUI.goToView(viewPath);
+                        }
+                    });
+                    opSubMenu.addItem(operationItem);
+                }
+                operations.setSubmenu(opSubMenu);
             }
-            for (String displayName : ordered) {
-                final OperationDefinition operationDefinition = definitionMap.get(displayName);
-
-                MenuItem operationItem = new MenuItem(operationDefinition.getDisplayName());
-                operationItem.addClickHandler(new ClickHandler() {
-
-                    public void onClick(MenuItemClickEvent event) {
-                        String viewPath = LinkManager.getResourceTabLink(resource.getId(),
-                            ResourceDetailView.Tab.Operations.NAME, "Schedules") + "/0/" + operationDefinition.getId();
-                        CoreGUI.goToView(viewPath);
-                    }
-                });
-                opSubMenu.addItem(operationItem);
-            }
-            operations.setSubmenu(opSubMenu);
+            resourceContextMenu.addItem(operations);
         }
-        resourceContextMenu.addItem(operations);
 
         // this menu item will be the last one
         final OpenSupportCaseMenuItem openSupportCase = new OpenSupportCaseMenuItem(resourceComposite);
@@ -822,12 +836,14 @@ public class ResourceTreeView extends EnhancedVLayout {
         final ResourceGWTServiceAsync resourceService = GWTServiceLookup.getResourceService();
 
         // This is an expensive call, but loads all nodes that are visible in the tree given a selected resource
-        CoreGUI.showBusy(true);;
+        CoreGUI.showBusy(true);
+        ;
         resourceService.getResourceLineageAndSiblings(selectedResourceId,
             new AsyncCallback<List<ResourceLineageComposite>>() {
 
                 public void onFailure(Throwable caught) {
-                    CoreGUI.showBusy(false);;
+                    CoreGUI.showBusy(false);
+                    ;
                     boolean resourceDoesNotExist = caught.getMessage().contains("ResourceNotFoundException");
                     // If a Resource with the specified id does not exist, don't emit an error, since
                     // ResourceDetailView.loadSelectedItem() will take care of emitting one.
@@ -874,7 +890,8 @@ public class ResourceTreeView extends EnhancedVLayout {
                             public void execute(DSResponse response, Object rawData, DSRequest request) {
                                 Log.info("Done fetching data for tree.");
 
-                                CoreGUI.showBusy(false);;
+                                CoreGUI.showBusy(false);
+                                ;
 
                                 if (updateSelection) {
                                     updateSelection();
@@ -905,7 +922,8 @@ public class ResourceTreeView extends EnhancedVLayout {
                                     treeGrid.getTree().linkNodes(
                                         ResourceTreeDatasource.buildNodes(lineage, lockedData, treeGrid));
 
-                                    CoreGUI.showBusy(false);;
+                                    CoreGUI.showBusy(false);
+                                    ;
 
                                     if (updateSelection) {
                                         TreeNode selectedNode = treeGrid.getTree().findById(selectedNodeId);
@@ -948,11 +966,13 @@ public class ResourceTreeView extends EnhancedVLayout {
             criteria.addFilterId(selectedAutoGroupId);
             criteria.addFilterVisible(false);
             criteria.fetchResourceType(true);
-            CoreGUI.showBusy(true);;
+            CoreGUI.showBusy(true);
+            ;
             resourceGroupService.findResourceGroupsByCriteria(criteria, new AsyncCallback<PageList<ResourceGroup>>() {
 
                 public void onFailure(Throwable caught) {
-                    CoreGUI.showBusy(false);;
+                    CoreGUI.showBusy(false);
+                    ;
                     CoreGUI.getErrorHandler().handleError(MSG.view_tree_common_loadFailed_node(), caught);
                 }
 
@@ -965,7 +985,8 @@ public class ResourceTreeView extends EnhancedVLayout {
                     loadTree(backingGroup.getAutoGroupParentResource().getId(), false, new AsyncCallback<Void>() {
 
                         public void onFailure(Throwable caught) {
-                            CoreGUI.showBusy(false);;
+                            CoreGUI.showBusy(false);
+                            ;
                             CoreGUI.getErrorHandler().handleError(MSG.view_tree_common_loadFailed_children(), caught);
                         }
 
@@ -977,7 +998,8 @@ public class ResourceTreeView extends EnhancedVLayout {
                             autoGroupNodeMap.put(backingGroup.getId(), agNode);
                             updateSelection();
 
-                            CoreGUI.showBusy(false);;
+                            CoreGUI.showBusy(false);
+                            ;
                         }
                     });
                 }
