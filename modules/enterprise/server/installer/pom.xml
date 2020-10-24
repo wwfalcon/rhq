@@ -109,7 +109,7 @@
       <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
-        <version>14.0.1</version>
+        <version>30.0-android</version>
       </dependency>
 
         <!-- test deps -->
@@ -287,8 +287,7 @@
                                 <configuration>
                                     <target>
                                         <echo>*** Deploying installer module to ${rhq.deploymentDir} ...</echo>
-                                        <unzip src="target/${rhq.deploymentName}"
-                                               dest="${rhq.deploymentDir}"/>
+                                        <unzip src="target/${rhq.deploymentName}" dest="${rhq.deploymentDir}"/>
                                     </target>
                                 </configuration>
                                 <goals>
@@ -302,7 +301,7 @@
                                 <configuration>
                                     <target>
                                         <echo>*** Deleting installer module ${rhq.deploymentDir}/${moduleDir} ...</echo>
-                                        <delete dir="${rhq.deploymentDir}/${moduleDir}" />
+                                        <delete dir="${rhq.deploymentDir}/${moduleDir}"/>
                                     </target>
                                 </configuration>
                                 <goals>
