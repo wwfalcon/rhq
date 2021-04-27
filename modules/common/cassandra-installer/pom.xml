@@ -50,7 +50,7 @@
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
-      <version>2.1</version>
+      <version>2.7</version>
     </dependency>
 
     <dependency>
@@ -156,10 +156,10 @@
                 <phase>compile</phase>
                 <configuration>
                   <target>
-                    <mkdir dir="${rhq.deploymentDir}" />
-                    <property name="deployment.file" location="${rhq.deploymentDir}/${project.build.finalName}.jar" />
+                    <mkdir dir="${rhq.deploymentDir}"/>
+                    <property name="deployment.file" location="${rhq.deploymentDir}/${project.build.finalName}.jar"/>
                     <echo>*** Updating ${deployment.file}...</echo>
-                    <jar destfile="${deployment.file}" basedir="${project.build.outputDirectory}" />
+                    <jar destfile="${deployment.file}" basedir="${project.build.outputDirectory}"/>
                   </target>
                 </configuration>
                 <goals>
@@ -172,9 +172,9 @@
                 <phase>clean</phase>
                 <configuration>
                   <target>
-                    <property name="deployment.file" location="${rhq.deploymentDir}/${project.build.finalName}.jar" />
+                    <property name="deployment.file" location="${rhq.deploymentDir}/${project.build.finalName}.jar"/>
                     <echo>*** Deleting ${deployment.file}...</echo>
-                    <delete file="${deployment.file}" />
+                    <delete file="${deployment.file}"/>
                   </target>
                 </configuration>
                 <goals>
