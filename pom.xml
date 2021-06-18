@@ -123,7 +123,7 @@
     <getopt.version>1.0.13.redhat-4</getopt.version>
 
     <h2.version>1.2.139</h2.version>
-    <hibernate.version>4.2.13.Final</hibernate.version> <!-- -redhat-1 -->
+    <hibernate.version>5.4.24.Final</hibernate.version> <!-- -redhat-1 -->
     <hibernate-annotations.version>4.0.1.Final</hibernate-annotations.version> <!-- -redhat-2 -->
     <hibernate-jpa-2.0-api.version>1.0.1.Final</hibernate-jpa-2.0-api.version> <!-- -redhat-2 -->
 
@@ -1318,7 +1318,7 @@
                  <configuration>
                     <target>
                        <echo>Pre-creating target/classes so that Jacoco can see it even if there are no source files in the module.</echo>
-                       <mkdir dir="${project.build.directory}/classes" />
+                       <mkdir dir="${project.build.directory}/classes"/>
                     </target>
                  </configuration>
               </execution>
@@ -1771,10 +1771,10 @@
                   <phase>generate-sources</phase>
                   <configuration>
                       <target>
-                          <mkdir dir="target" />
+                          <mkdir dir="target"/>
 
                           <tstamp>
-                              <format property="buildTime" pattern="MM/dd/yy hh:mm aa z" locale="en,US" timezone="GMT" />
+                              <format property="buildTime" pattern="MM/dd/yy hh:mm aa z" locale="en,US" timezone="GMT"/>
                           </tstamp>
                           <echo file="target/build.properties">buildTime = ${buildTime}${line.separator}</echo>
 
@@ -1808,7 +1808,7 @@
                 <inherited>false</inherited>
                 <configuration>
                    <target>
-                      <property name="apidocs.dir" value="target/apidocs" />
+                      <property name="apidocs.dir" value="target/apidocs"/>
 
                       <copy todir="${apidocs.dir}/domain">
                          <fileset dir="modules/core/domain/target/site/apidocs" erroronmissingdir="false"/>
@@ -1987,8 +1987,8 @@
        </activation>
 
        <properties>
-          <jacoco.unit-test.args></jacoco.unit-test.args>
-          <jacoco.integration-test.args></jacoco.integration-test.args>
+          <jacoco.unit-test.args/>
+          <jacoco.integration-test.args/>
        </properties>
     </profile>
 
@@ -2125,35 +2125,35 @@
                      <configuration>
                         <target>
                            <!-- Execute an ant task within maven -->
-                           <echo message="Generating Overall JaCoCo Report" />
+                           <echo message="Generating Overall JaCoCo Report"/>
                            <taskdef name="report" classname="org.jacoco.ant.ReportTask">
-                              <classpath path="${project.build.directory}/jacoco-jars/org.jacoco.ant.jar" />
+                              <classpath path="${project.build.directory}/jacoco-jars/org.jacoco.ant.jar"/>
                            </taskdef>
-                           <mkdir dir="${project.reporting.outputDirectory}/coverage-report/overall" />
+                           <mkdir dir="${project.reporting.outputDirectory}/coverage-report/overall"/>
                            <report>
                               <executiondata>
                                  <fileset dir="${project.build.directory}">
-                                    <include name="jacoco-unit-test.exec" />
-                                    <include name="jacoco-integration-test.exec" />
+                                    <include name="jacoco-unit-test.exec"/>
+                                    <include name="jacoco-integration-test.exec"/>
                                  </fileset>
                               </executiondata>
                               <structure name="Overall Code Coverage Report (including unit and integration tests)">
                                  <classfiles>
                                     <fileset dir="${project.build.directory}">
-                                       <include name="classes/org/rhq/**" />
-                                       <include name="generated-classes/*/org/rhq/**" />
+                                       <include name="classes/org/rhq/**"/>
+                                       <include name="generated-classes/*/org/rhq/**"/>
                                     </fileset>
                                  </classfiles>
                                  <sourcefiles>
                                     <dirset dir="${basedir}">
-                                       <include name="src/main/java" />
-                                       <include name="target/generated-sources/*" />
+                                       <include name="src/main/java"/>
+                                       <include name="target/generated-sources/*"/>
                                     </dirset>
                                  </sourcefiles>
                               </structure>
-                              <html destdir="${project.reporting.outputDirectory}/coverage-report/overall" />
-                              <xml destfile="${project.reporting.outputDirectory}/coverage-report/overall/jacoco.xml" />
-                              <csv destfile="${project.reporting.outputDirectory}/coverage-report/overall/jacoco.csv" />
+                              <html destdir="${project.reporting.outputDirectory}/coverage-report/overall"/>
+                              <xml destfile="${project.reporting.outputDirectory}/coverage-report/overall/jacoco.xml"/>
+                              <csv destfile="${project.reporting.outputDirectory}/coverage-report/overall/jacoco.csv"/>
                            </report>
                         </target>
                      </configuration>
